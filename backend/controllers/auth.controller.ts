@@ -1,15 +1,15 @@
-import { Request, Response, NextFunction, ErrorRequestHandler } from 'express';
 import {
-  ApplicationError,
   ApplicationResponse,
   IMessageAsResponse,
   TypedAuthorizedRequestBody,
   TypedRequestBody,
 } from '../types/express.types';
-import User, { IUser, IUserWithId } from '../models/user.model';
+import User from '../models/user.model';
 import { hash, genSalt, compare } from 'bcrypt-ts';
 import { generateTokenAndSetCookie } from '../lib/utils/generateToken';
 import { IUserAsResponse } from '../types/auth.types';
+import { controllerError } from '../lib/utils/controllerError';
+import { PASSWORD_MIN_LENGTH } from '../server';
 
 export const signUp = async (
   req: TypedRequestBody<{
@@ -37,7 +37,7 @@ export const signUp = async (
       return res.status(400).json({ error: 'Email is already taken' });
     }
 
-    if (password.length < 3) {
+    if (password.length < PASSWORD_MIN_LENGTH) {
       return res
         .status(400)
         .json({ error: 'Password must be at least 3 characters long' });
@@ -73,16 +73,7 @@ export const signUp = async (
 
     //const
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      if ('message' in error) {
-        console.log('Error in signup in auth.controller.ts:', error.message);
-      } else {
-        console.log(
-          'Error in signup in auth.controller.ts (without an attribute message)',
-          error
-        );
-      }
-    }
+    controllerError(error, 'in signUp in auth.controller.ts');
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -113,16 +104,7 @@ export const login = async (
       coverImg: user.coverImg,
     });
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      if ('message' in error) {
-        console.log('Error in login in auth.controller.ts:', error.message);
-      } else {
-        console.log(
-          'Error in login in auth.controller.ts (without an attribute message)',
-          error
-        );
-      }
-    }
+    controllerError(error, 'in login in auth.controller.ts');
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -134,16 +116,7 @@ export const logout = async (
     res.cookie('jwt', '', { maxAge: 0 });
     res.status(200).json({ message: 'Logged out successfully' });
   } catch (error: unknown) {
-    if (error instanceof Error) {
-      if ('message' in error) {
-        console.log('Error in logout in auth.controller.ts:', error.message);
-      } else {
-        console.log(
-          'Error in logout in auth.controller.ts (without an attribute message)',
-          error
-        );
-      }
-    }
+    controllerError(error, 'in logout in auth.controller.ts');
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };
@@ -156,16 +129,7 @@ export const getMe = async (
     const user = req.user; //await User.findById(req.user._id);
     res.status(200).json(user);
   } catch (error) {
-    if (error instanceof Error) {
-      if ('message' in error) {
-        console.log('Error in getMe in auth.controller.ts:', error.message);
-      } else {
-        console.log(
-          'Error in getMe in auth.controller.ts (without an attribute message)',
-          error
-        );
-      }
-    }
+    controllerError(error, 'in getMe in auth.controller.ts');
     res.status(500).json({ error: 'Internal Server Error' });
   }
 };

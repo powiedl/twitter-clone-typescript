@@ -21,12 +21,8 @@ const userSchema = new mongoose.Schema<IUser>(
     fullName: { type: String, required: true },
     password: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    followers: [
-      { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: [] },
-    ],
-    following: [
-      { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: [] },
-    ],
+    followers: [{ type: Types.ObjectId, ref: 'User', default: [] }],
+    following: [{ type: Types.ObjectId, ref: 'User', default: [] }],
     profileImg: {
       type: String,
       default: '',

@@ -157,6 +157,27 @@ The followers are technically optional, because required is not set to true - bu
 
 The documentation recommends to add `as const` in the schema definition and they also type the mongoose.model with the same interface which was used in the schema definition.
 
+## Defining a model with an attribute which is an enum
+
+To define an attribute in the model, which is an enum you first define the TypeScript enum (and export it, because you will use it in other files too), e.g.:
+
+```typescript
+export enum NotificationType {
+  FOLLOW = 'follow',
+  LIKE = 'like',
+}
+```
+
+Then you can use this enum in the schema definition (and because our enum values are strings the type of the attribute is `String`. If it were numbers the type would be `Number`)
+
+```typescript
+    type: {
+      type: String,
+      required: true,
+      enum: NotificationType,
+    },
+```
+
 # Typing Express Responses body with reference to the database design
 
 Therefore I added a types.ts file for each route "group" (in the beginning only auth). Within this file I declare the types for the controllers respones body types. In the auth part these types correspond with the IUserWithId type (but without the password, because we don't want to send this back to the client). I use the _Omit_ utility type for this (`Omit<IUserWithId,'password'>`).
@@ -190,4 +211,36 @@ export interface TypedRequestBody<T> extends Express.Request {
   cookies: { jwt?: string };
   body: T;
 }
+```
+
+# Params in Express Request (in combination with TypedAuthorizedRequestBody)
+
+The next extension to the TypedAuthorizedRequestBody is the possibility to process route params. To avoid a new type I've changed the TypedAuthoroizedRequestBody a little bit with a second type parameter (which defaults to an empty object - in case no route parameters are present in the given route and to keep the auth routes - which don't have a route parameter - fully functional without a change).
+
+```typescript
+export interface TypedAuthorizedRequestBody<T, P = {}> extends Express.Request {
+  cookies?: { jwt?: string };
+  user?: IUserAsResponse;
+  body: T;
+  params: P;
+}
+```
+
+# Modifications to the source code (which were not obious to me)
+
+In this section I note the modifications which I need to make to the source code because of the usage of TypeScript. If I figured out a general rule of the modification I have also noted this somewhere above. If it is a "single" noteworthy modification I will document them here (a section for each file and within this a subsection for each function). If I had to do the same modification multiple times I'm not sure if I post all occurences of this particular modification inside this readme. And maybe I will put this modifications into a separate file for the front- and the backend (depending how long this section will be at the end).
+
+## user.controller.ts
+
+### followUnfollowUser function
+
+I had a little typing problem with `import("mongoose").Types.ObjectId` and `import("mongoose").Schema.Types.ObjectId` (the followers and following are an Array of the second, but the \_id of the currentUser is of the first type). The only way to get around this (for me) was to change the type of the userToModify, so that the followers match the first type. To do so, we must Omit the original followers type definition and add a new one to the userToModify. Maybe this will lead to a trouble later on (when I want to save the userToModify).
+
+```typescript
+const userToModify = (await User.findById(id)) as Omit<
+  IUserAsResponse,
+  'followers'
+> & {
+  followers: Types.ObjectId[];
+};
 ```
