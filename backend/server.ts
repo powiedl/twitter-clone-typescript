@@ -5,6 +5,7 @@ import { v2 as cloudinary } from 'cloudinary';
 
 import authRoutes from './routes/auth.routes';
 import userRoutes from './routes/user.routes';
+import postRoutes from './routes/post.routes';
 import connectDb from './db/connectMongoDb';
 import { IHealth } from './types/express.types';
 
@@ -52,7 +53,8 @@ app.use(express.urlencoded({ extended: true })); // to parse form data (urlencod
 app.use(cookieParser());
 
 app.use('/api/auth', authRoutes);
-app.use('/api/user', userRoutes);
+app.use('/api/users', userRoutes);
+app.use('/api/posts', postRoutes);
 app.get('/api/health', (req, res: express.Response<IHealth>) => {
   res.status(200).json({ status: 'OK', route: '/api' });
 });

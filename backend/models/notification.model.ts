@@ -10,6 +10,7 @@ export interface INotification {
 export enum NotificationType {
   FOLLOW = 'follow',
   LIKE = 'like',
+  COMMENT = 'comment',
 }
 
 export type INotificationWithId = INotification & { _id: Types.ObjectId };

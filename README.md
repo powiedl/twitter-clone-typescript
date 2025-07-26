@@ -157,6 +157,36 @@ The followers are technically optional, because required is not set to true - bu
 
 The documentation recommends to add `as const` in the schema definition and they also type the mongoose.model with the same interface which was used in the schema definition.
 
+## Enabling "automatic" versioning (not TypeScript related)
+
+MongoDB (or mongoose?) comes with an integrated versioning of documents. By default each document has an attribute \_\_v (which is an integer and defaults to 0). The idea is, to increment this number at each save of the document - but this is not done automatically. You have to take two steps to make this happen:
+
+1. you need to add the versionKey property in the options of the schema
+2. you need a middleware to increase the versionKey before saving it to the database
+
+```typescript
+const userSchema = new mongoose.Schema<IUser>(
+  {
+    username: { type: String, required: true, unique: true },
+    ...
+  } as const,
+  { timestamps: true, versionKey: '__v' }
+);
+// increase __v at every save
+userSchema.pre('save', function (next) {
+  if (this.isModified()) {
+    this.__v += 1;
+  }
+  next();
+});
+```
+
+You can also define a "custom" versionKey (e.g. `revision`) - then you have to add the attribute to the document schema as well: `{revision:{ type: Number, default: 0 }` and also adapt the middleware to use this attribute.
+
+For more information about the Mongoose Versioning see this [article](https://moldstud.com/articles/p-harnessing-mongoose-best-practices-for-effective-versioning-of-your-models).
+
+I've added the versioning of the user documents for reference purpose (maybe I will later add the VersionHistorySchema as well - which enables you to also see the historic versions of the document).
+
 ## Defining a model with an attribute which is an enum
 
 To define an attribute in the model, which is an enum you first define the TypeScript enum (and export it, because you will use it in other files too), e.g.:
@@ -226,9 +256,9 @@ export interface TypedAuthorizedRequestBody<T, P = {}> extends Express.Request {
 }
 ```
 
-# Modifications to the source code (which were not obious to me)
+# Modifications to the source code (which were not obvious to me)
 
-In this section I note the modifications which I need to make to the source code because of the usage of TypeScript. If I figured out a general rule of the modification I have also noted this somewhere above. If it is a "single" noteworthy modification I will document them here (a section for each file and within this a subsection for each function). If I had to do the same modification multiple times I'm not sure if I post all occurences of this particular modification inside this readme. And maybe I will put this modifications into a separate file for the front- and the backend (depending how long this section will be at the end).
+In this section I note the modifications which I needed to make to the source code because of the usage of TypeScript. If I figured out a general rule of the modification I have also noted this somewhere above. If it is a "single" noteworthy modification I will document them here (a section for each file and within this a subsection for each function). If I had to do the same modification multiple times I'm not sure if I post all occurences of this particular modification inside this readme. And maybe I will put this modifications into a separate file for the front- and the backend (depending how long this section will be at the end).
 
 ## user.controller.ts
 
@@ -244,3 +274,48 @@ const userToModify = (await User.findById(id)) as Omit<
   followers: Types.ObjectId[];
 };
 ```
+
+## notification.model.ts
+
+I've decided to implement the comment interface as a "standalone" interface (but within the notification.model.ts file), because I think it might be useful (later on).
+
+## post.controller.ts
+
+In the **commentOnPost** controller function TypeScript get's struggled to sort out Types.ObjectId and ObjectId. I was not able to figure out a way to get this correct - without changing the ObjectId to Types.ObjectId in all the interfaces. So I've decided to expect this error (when it comes to create a new comment):
+
+```typescript
+const comment = { user: new Types.ObjectId(userId), text };
+// @ts-expect-error
+post.comments.push(comment);
+```
+
+In addition I've also added a notification for a new comment (which is - beside a new value in the NotificationType enum mainly the same as the notification for the following/unfollowing of a user). While testing this implementation I've realised that the current code allows a comment on your own post. I'm not sure, if this is a good decission, but I'll go with it (but in this case no notification will be sent, because you know that you commented your post ...).
+
+In the **likeUnlikePost** I've struggled again with Types.ObjectId and Schema.Types.ObjectId - but didn't find away around (except using @ts-ignore two times).
+
+For the function **getUserPosts** I've created a stripped down User type (`IForeignUser` defined in `types/user.types.ts`) where I omit "secret" attributes:
+
+```typescript
+export type IForeignUser = Omit<
+  IUserWithId,
+  'username' | 'password' | 'email' | 'likedPosts'
+>;
+```
+
+In the `post.controller.ts` I've created a type for the populated posts `IPopulatedPost`:
+
+```typescript
+interface IPopulatedPost {
+  _id: Types.ObjectId;
+  user: IForeignUser;
+  likes: IForeignUser[];
+  comments: (ICreateComment & { user: IForeignUser })[];
+  text: string;
+  img: string;
+  // createdAt: Date;
+  // updatedAt: Date;
+  __v: number;
+}
+```
+
+But this does not match exactly what I get back from my mongoDB search and so I ended with one more `// @ts-expect-error` (above the return statement) in the **getUserPosts**.

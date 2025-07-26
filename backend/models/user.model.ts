@@ -11,6 +11,7 @@ export interface IUser {
   coverImg?: string;
   bio?: string;
   link?: string;
+  likedPosts?: ObjectId[];
 }
 
 export type IUserWithId = IUser & { _id: Types.ObjectId };
@@ -33,9 +34,23 @@ const userSchema = new mongoose.Schema<IUser>(
     },
     bio: { type: String, default: '' },
     link: { type: String, default: '' },
+    likedPosts: [
+      {
+        type: Types.ObjectId,
+        ref: 'Post',
+        default: [],
+      },
+    ],
   } as const,
-  { timestamps: true }
+  { timestamps: true, versionKey: '__v' }
 );
+// increase __v at every save
+userSchema.pre('save', function (next) {
+  if (this.isModified()) {
+    this.__v += 1;
+  }
+  next();
+});
 
 const User = mongoose.model<IUser>('User', userSchema);
 
