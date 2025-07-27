@@ -342,3 +342,66 @@ But this does not match exactly what I get back from my mongoDB search and so I 
 In this controller I try a different approach in returning the data - I'm converting the data to a native JavaScript Object to avoid typing problems. If this works out as a good decision I think I will rework the other controllers as well. But it was hard work (for me) to write a suitable conversion function from the result I got from mongoose to a plain (minimized) Javascript object. Mongoose has a lean() method for results of queries, but this gives a plain Javascript object but with too many attributes.
 
 Maybe I will have to add createdAd, modifiedAt and \_\_v to the object the controller returns (if it is needed in the frontend).
+
+# FRONTEND
+
+## Setup
+
+The setup of TailwindCSS 4.1 is pretty straight forward - just follow the short instructions (they get shorter with every new version of TailwindCSS). The same is true for DaisyUI (v5.0.47). The only little pitfall was an error in the CSS file after inserting the `@plugin "daisyui"` line (but it turned out, that it is an "error" of the Visual Studio Code Extension). To get rid of this error, we must tell Visual Studio Code, that .css files are tailwindcss Files. This is done in the VSCode Settings - File Associations (add `*.css` with a value of `tailwindcss` - you can do the same for `*.scss`, but this is not needed as long as you do not use .scss files).
+
+## React Router
+
+I've decided to go with the Declarative Mode (which is basically the same as the BrowserRouter from React Router 6), because I was not able to get the Framework Mode to work (and I found some hints that Framework Mode is still in Beta - but this information was not from the official React Router Homepage).
+
+## UI Design
+
+Most of the modifications needed for TypeScript were pretty straight forward, but in the `CreatePost.tsx` I've faced some problems - and right now I don't know if my "solution" to this problems will work at the end. The problems were mainly araound the useRef for the hidden input of the image file.
+
+### ProfilePage.tsx
+
+This needs some work to get it TypeScript ready ...
+
+```typescript
+  // added a Type Parameter to the useState
+  const [coverImg, setCoverImg] = useState<string | null>(null);
+  const [profileImg, setProfileImg] = useState<string | null>(null);
+  ...
+  const handleImgChange = (
+    e: ChangeEvent<HTMLInputElement>,
+    state: 'coverImg' | 'profileImg'
+  ) => {
+    if (!e.target || !e.target.files) return;
+    const file = e.target.files[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        if (state === 'coverImg') setCoverImg(reader.result as string);
+        if (state === 'profileImg') setProfileImg(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+  ...
+                  {isMyProfile && (
+                  <div
+                    className='absolute top-2 right-2 rounded-full p-2 bg-gray-800 bg-opacity-75 cursor-pointer opacity-0 group-hover/cover:opacity-100 transition duration-200'
+                    onClick={() =>
+                      (coverImgRef.current! as HTMLInputElement).click()
+                    }
+                  >
+                    <MdEdit className='w-5 h-5 text-white' />
+                  </div>
+                )}
+...
+                      {isMyProfile && (
+                        <MdEdit
+                          className='w-4 h-4 text-white'
+                          onClick={() =>
+                            (profileImgRef.current! as HTMLInputElement).click()
+                          }
+                        />
+                      )}
+...
+```
+
+I hope I've not forgotten some of my modification. And like in the `CreatePost.tsx` I will have to do the rest of this project to see if they work and if they don't cause different problems. But for now I have no Typescript errors ...
