@@ -51,6 +51,23 @@ This will watch for all changes of server.ts and all ts files under the backend 
 
 With this json the script for dev in package.json becomes as simple as `"dev": "nodemon",`.
 
+# General TypeScript learnings
+
+## instanceof
+
+**instanceof** has the following requirements:
+
+- the left hand side must be of type any or an object type or a type parameter.
+- the right hand side must be a class (not an interface or type!).
+
+### left hand side tweaks
+
+If your left hand side does not suit (maybe because it is an union type) you can treat it `as any` first: `(f._id as any) instanceof Types.ObjectId` (from **types/notification.types.ts**). I think the usage of any is fine here, because we narrow it down afterwards with the instanceof.
+
+### right hand side tweaks
+
+If you want to use a type on the right hand side ... I don't have a solution right now. We must convert the type to something similar, but with an constructor function ...
+
 # Express with TypeScript
 
 We can define our controller functions for the different routes following this pattern:
@@ -319,3 +336,9 @@ interface IPopulatedPost {
 ```
 
 But this does not match exactly what I get back from my mongoDB search and so I ended with one more `// @ts-expect-error` (above the return statement) in the **getUserPosts**.
+
+## notification.controller.ts
+
+In this controller I try a different approach in returning the data - I'm converting the data to a native JavaScript Object to avoid typing problems. If this works out as a good decision I think I will rework the other controllers as well. But it was hard work (for me) to write a suitable conversion function from the result I got from mongoose to a plain (minimized) Javascript object. Mongoose has a lean() method for results of queries, but this gives a plain Javascript object but with too many attributes.
+
+Maybe I will have to add createdAd, modifiedAt and \_\_v to the object the controller returns (if it is needed in the frontend).
