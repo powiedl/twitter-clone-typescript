@@ -5,13 +5,53 @@ import { IoNotifications } from 'react-icons/io5';
 import { FaUser } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 import { BiLogOut } from 'react-icons/bi';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type {
+  ApplicationResponse,
+  IMessageAsResponse,
+} from '../../../../backend/types/express.types';
+import toast from 'react-hot-toast';
+import { queryAuthUser } from '../../queries/authUser';
 
 const Sidebar = () => {
-  const data = {
-    fullName: 'John Doe',
-    username: 'johndoe',
-    profileImg: '/avatars/boy1.png',
-  };
+  const queryClient = useQueryClient();
+
+  const { mutate: logoutMutation } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch('/api/auth/logout', {
+          method: 'POST',
+        });
+        const data = (await res.json()) as
+          | ApplicationResponse<object>
+          | IMessageAsResponse;
+        if (!res.ok) {
+          if ('error' in data) {
+            if (data.error) throw new Error(data.error as string);
+          }
+          throw new Error('Something went wrong');
+        }
+        if ('error' in data) throw new Error(data.error as string);
+        return data;
+      } catch (error) {
+        console.log('Error in Sidebar,logoutMutation', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success('Logged out successfully');
+      queryClient.invalidateQueries({ queryKey: ['authUser'] });
+    },
+    onError: () => {
+      toast.error('Logout failed');
+    },
+  });
+
+  const { data: authUser } = useQuery({
+    queryKey: ['authUser'],
+    queryFn: queryAuthUser,
+  });
+  console.log('Sidebar,authUser', authUser);
 
   return (
     <div className='md:flex-[2_2_0] w-18 max-w-52'>
@@ -41,7 +81,9 @@ const Sidebar = () => {
 
           <li className='flex justify-center md:justify-start'>
             <Link
-              to={`/profile/${data?.username}`}
+              to={`/profile/${
+                authUser && 'username' in authUser && authUser.username
+              }`}
               className='flex gap-3 items-center hover:bg-stone-900 transition-all rounded-full duration-300 py-2 pl-2 pr-4 max-w-fit cursor-pointer'
             >
               <FaUser className='w-6 h-6' />
@@ -49,24 +91,46 @@ const Sidebar = () => {
             </Link>
           </li>
         </ul>
-        {data && (
+        {authUser && (
           <Link
-            to={`/profile/${data.username}`}
+            to={`/profile/${
+              authUser && 'username' in authUser && authUser.username
+            }`}
             className='mt-auto mb-10 flex gap-2 items-start transition-all duration-300 hover:bg-[#181818] py-2 px-4 rounded-full'
           >
             <div className='avatar hidden md:inline-flex'>
               <div className='w-8 rounded-full'>
-                <img src={data?.profileImg || '/avatar-placeholder.png'} />
+                <img
+                  src={
+                    (authUser &&
+                      'profileImg' in authUser &&
+                      (authUser.profileImg as string)) ||
+                    '/avatar-placeholder.png'
+                  }
+                />
               </div>
             </div>
             <div className='flex justify-between flex-1'>
               <div className='hidden md:block'>
                 <p className='text-white font-bold text-sm w-20 truncate'>
-                  {data?.fullName}
+                  {authUser &&
+                    'fullName' in authUser &&
+                    (authUser?.fullName as string)}
                 </p>
-                <p className='text-slate-500 text-sm'>@{data?.username}</p>
+                <p className='text-slate-500 text-sm'>
+                  @
+                  {authUser &&
+                    'username' in authUser &&
+                    (authUser.username as string)}
+                </p>
               </div>
-              <BiLogOut className='w-5 h-5 cursor-pointer' />
+              <BiLogOut
+                className='w-5 h-5 cursor-pointer'
+                onClick={(e) => {
+                  e.preventDefault();
+                  logoutMutation();
+                }}
+              />
             </div>
           </Link>
         )}

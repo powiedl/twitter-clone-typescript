@@ -1,10 +1,7 @@
 import mongoose, { ObjectId, Types } from 'mongoose';
+import { ICreateUser } from '../types/auth.types';
 
-export interface IUser {
-  username: string;
-  fullName: string;
-  password: string;
-  email: string;
+export interface IUser extends ICreateUser {
   followers: ObjectId[];
   following: ObjectId[];
   profileImg?: string;

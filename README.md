@@ -405,3 +405,30 @@ This needs some work to get it TypeScript ready ...
 ```
 
 I hope I've not forgotten some of my modification. And like in the `CreatePost.tsx` I will have to do the rest of this project to see if they work and if they don't cause different problems. But for now I have no Typescript errors ...
+
+## Typing Backend Requests and Responses
+
+I don't really know how to deal with this in a good way. I could import "all" the types defined in the backend also in the frontend and then type the requests, but this doesn't really feel right. Nevertheless (and because I don't have a better idea right now) I will go with this approach - until I find a better one.
+
+And as an example here is the code of the SignUpPage mutation (the interesting part of the try catch - which is mainly the inside of the try):
+
+```typescript
+const res = await fetch('/api/auth/signup', {
+  method: 'POST',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify(newUser),
+});
+const data = (await res.json()) as ApplicationResponse<ICreateUser>;
+if (!res.ok) {
+  if ('error' in data) {
+    if (data.error) throw new Error(data.error as string);
+  }
+  throw new Error('Something went wrong');
+}
+if ('error' in data) throw new Error(data.error as string);
+return data;
+```
+
+We do not type the fetch itself (as it seems it is not a generic function). Instead we type the res.json(). Remember: If you want to access an attribute in a type union (which doesn't exist in every type) you have to verify, if your current data has that attribute (which is the reason for the `('error' in data)`). The last if statement is maybe redundant (but as I don't know if there might be a situation where res.ok is true, but there is an error attribute I put it in there).
+
+And the `as string` in data.error is needed, because Typescript is not aware, that data.error is a string (although it is defined in ApplicationError and ApplicationResponse is a type union which contains ApplicationError). But TypeScript knows, that it must be a string, if it is present (because if you try `as number` or `as {error:string}` you get a TypeScript errror immeadiatly).

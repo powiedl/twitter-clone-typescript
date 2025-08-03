@@ -11,8 +11,14 @@ import { FaArrowLeft } from 'react-icons/fa6';
 import { IoCalendarOutline } from 'react-icons/io5';
 import { FaLink } from 'react-icons/fa';
 import { MdEdit } from 'react-icons/md';
+import { useQuery } from '@tanstack/react-query';
+import { queryAuthUser } from '../../queries/authUser';
 
 const ProfilePage = () => {
+  const { data: authUser, isLoading } = useQuery({
+    queryKey: ['authUser'],
+    queryFn: queryAuthUser,
+  });
   const [coverImg, setCoverImg] = useState<string | null>(null);
   const [profileImg, setProfileImg] = useState<string | null>(null);
   const [feedType, setFeedType] = useState('posts');
@@ -20,7 +26,6 @@ const ProfilePage = () => {
   const coverImgRef = useRef(null);
   const profileImgRef = useRef(null);
 
-  const isLoading = false;
   const isMyProfile = true;
 
   const user = {
