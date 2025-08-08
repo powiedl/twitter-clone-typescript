@@ -5,6 +5,7 @@ export interface ICreateComment {
 }
 
 export interface IComment extends ICreateComment {
+  _id?: ObjectId;
   user: ObjectId;
 }
 

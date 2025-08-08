@@ -2,23 +2,66 @@ import { CiImageOn } from 'react-icons/ci';
 import { BsEmojiSmileFill } from 'react-icons/bs';
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react';
 import { IoCloseSharp } from 'react-icons/io5';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryAuthUser } from '../../queries/authUser.query';
+import type {
+  ApplicationResponse,
+  IMessageAsResponse,
+} from '../../../../backend/types/express.types';
+import type { IPostWithId } from '../../../../backend/models/post.model';
+import toast from 'react-hot-toast';
+import CreatePostSkeleton from '../../components/skeletons/CreatePostSkeleton';
 
 const CreatePost = () => {
   const [text, setText] = useState('');
   const [img, setImg] = useState<string | null>(null);
+  const queryClient = useQueryClient();
+  const { data: authUser, isLoading } = useQuery({
+    queryKey: ['authUser'],
+    queryFn: queryAuthUser,
+  });
+
+  const {
+    mutate: createPost,
+    isPending,
+    isError,
+    error,
+  } = useMutation({
+    mutationFn: async ({ text, img }: { text: string; img: string }) => {
+      try {
+        const res = await fetch('/api/posts/create', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, img }),
+        });
+        const data = (await res.json()) as ApplicationResponse<
+          IPostWithId | IMessageAsResponse
+        >;
+        if (!res.ok) {
+          if ('error' in data) {
+            if (data.error) throw new Error(data.error as string);
+          }
+          throw new Error('Something went wrong');
+        }
+        return data;
+      } catch (error) {
+        console.log('Error in CreatePost,CreatePostMutation', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      setText('');
+      setImg('');
+      toast.success('Post created successfully');
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+  });
 
   const imgRef = useRef(null);
 
-  const isPending = false;
-  const isError = false;
-
-  const data = {
-    profileImg: '/avatars/boy1.png',
-  };
-
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
-    alert('Post created successfully');
+    createPost({ text, img: img || '' });
   };
 
   const handleImgChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -32,12 +75,21 @@ const CreatePost = () => {
       reader.readAsDataURL(file);
     }
   };
+  if (isLoading) return <CreatePostSkeleton />;
+  if (!authUser) return;
 
   return (
     <div className='flex p-4 items-start gap-4 border-b border-gray-700'>
       <div className='avatar'>
         <div className='w-8 rounded-full'>
-          <img src={data.profileImg || '/avatar-placeholder.png'} />
+          <img
+            src={
+              ('profileImg' in authUser &&
+                typeof authUser.profileImg === 'string' &&
+                authUser.profileImg) ||
+              '/avatar-placeholder.png'
+            }
+          />
         </div>
       </div>
       <form className='flex flex-col gap-2 w-full' onSubmit={handleSubmit}>
@@ -77,7 +129,7 @@ const CreatePost = () => {
             {isPending ? 'Posting...' : 'Post'}
           </button>
         </div>
-        {isError && <div className='text-red-500'>Something went wrong</div>}
+        {isError && <div className='text-red-500'>{error.message}</div>}
       </form>
     </div>
   );

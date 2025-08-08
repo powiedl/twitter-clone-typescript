@@ -14,6 +14,7 @@ import type {
   IMessageAsResponse,
 } from '../../../../backend/types/express.types';
 import toast from 'react-hot-toast';
+import { isIUserWithId } from '../../../../backend/types/auth.types';
 
 /* TODO: Create Type for post */
 /* TODO: Create Type for comment */
@@ -53,7 +54,7 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
   const postOwner = post.user;
   const isLiked = false;
 
-  const isMyPost = authUser?._id === postOwner._id;
+  const isMyPost = isIUserWithId(authUser) && authUser._id === postOwner._id;
 
   const formattedDate = '1h';
 

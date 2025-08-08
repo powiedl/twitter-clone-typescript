@@ -49,7 +49,7 @@ export const PASSWORD_MIN_LENGTH = Number(process.env.PASSWORD_MIN_LENGTH) || 3;
 const PORT = process.env.PORT || 8000;
 const app = express();
 
-app.use(express.json());
+app.use(express.json({ limit: '5mb' }));
 app.use(express.urlencoded({ extended: true })); // to parse form data (urlencoded)
 app.use(cookieParser());
 

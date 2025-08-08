@@ -6,3 +6,7 @@ export type ICreateUser = {
   email: string;
 };
 export type IUserAsResponse = Omit<IUserWithId, 'password'>;
+
+export const isIUserWithId = (value: unknown): value is IUserWithId => {
+  return (value as IUserWithId)._id !== undefined;
+};
