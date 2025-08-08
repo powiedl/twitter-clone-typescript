@@ -12,7 +12,7 @@ import { IoCalendarOutline } from 'react-icons/io5';
 import { FaLink } from 'react-icons/fa';
 import { MdEdit } from 'react-icons/md';
 import { useQuery } from '@tanstack/react-query';
-import { queryAuthUser } from '../../queries/authUser';
+import { queryAuthUser } from '../../queries/authUser.query';
 
 const ProfilePage = () => {
   const { data: authUser, isLoading } = useQuery({

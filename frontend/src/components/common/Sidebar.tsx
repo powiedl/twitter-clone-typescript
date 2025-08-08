@@ -11,7 +11,7 @@ import type {
   IMessageAsResponse,
 } from '../../../../backend/types/express.types';
 import toast from 'react-hot-toast';
-import { queryAuthUser } from '../../queries/authUser';
+import { queryAuthUser } from '../../queries/authUser.query';
 
 const Sidebar = () => {
   const queryClient = useQueryClient();
@@ -51,7 +51,6 @@ const Sidebar = () => {
     queryKey: ['authUser'],
     queryFn: queryAuthUser,
   });
-  console.log('Sidebar,authUser', authUser);
 
   return (
     <div className='md:flex-[2_2_0] w-18 max-w-52'>

@@ -17,7 +17,7 @@ import {
 import Notification, { NotificationType } from '../models/notification.model';
 import { IForeignUser } from '../types/user.types';
 
-interface IPopulatedPost {
+export interface IPopulatedPost {
   _id: Types.ObjectId;
   user: IForeignUser;
   likes: IForeignUser[];
@@ -31,15 +31,16 @@ interface IPopulatedPost {
 
 export const getAllPosts = async (
   req: TypedAuthorizedRequestBody<{}>,
-  res: ApplicationResponse<{}>
+  res: ApplicationResponse<IPopulatedPost[]>
 ) => {
   try {
     const posts = await Post.find()
       .sort({ createdAt: -1 })
       .populate('user', '-password') // simple form
       .populate({ path: 'comments.user', select: ['fullName', 'profileImg'] }); // extended form - where you pass an object with the specification of the population
-
     if (posts.length === 0) return res.status(200).json([]);
+
+    // @ts-expect-error TypeScript cannot check, that likedPosts is of type IPopulatedPosts[]
     res.status(200).json(posts);
   } catch (error) {
     controllerError('getAllPosts in post.controller.ts');
@@ -49,7 +50,7 @@ export const getAllPosts = async (
 
 export const getLikedPosts = async (
   req: TypedAuthorizedRequestBody<{}, { id: Types.ObjectId }>,
-  res: ApplicationResponse<{}>
+  res: ApplicationResponse<IPopulatedPost[] | IMessageAsResponse>
 ) => {
   try {
     const { id: userId } = req.params;
@@ -73,6 +74,7 @@ export const getLikedPosts = async (
         select: ['fullName', 'profilePic', 'bio'],
       });
 
+    // @ts-expect-error TypeScript cannot check, that likedPosts is of type IPopulatedPosts[]
     return res.status(200).json(likedPosts);
   } catch (error) {
     controllerError('getLikedPosts in post.controller.ts');

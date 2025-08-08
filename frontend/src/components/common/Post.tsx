@@ -5,28 +5,70 @@ import { FaRegBookmark } from 'react-icons/fa6';
 import { FaTrash } from 'react-icons/fa';
 import { useState, type FormEvent } from 'react';
 import { Link } from 'react-router-dom';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryAuthUser } from '../../queries/authUser.query';
+import type { IPopulatedPost } from '../../../../backend/controllers/post.controller';
+import LoadingSpinner from './LoadingSpinner';
+import type {
+  ApplicationResponse,
+  IMessageAsResponse,
+} from '../../../../backend/types/express.types';
+import toast from 'react-hot-toast';
 
 /* TODO: Create Type for post */
 /* TODO: Create Type for comment */
 
-const Post = ({ post }) => {
+const Post = ({ post }: { post: IPopulatedPost }) => {
   const [comment, setComment] = useState('');
+  const { data: authUser, isLoading } = useQuery({
+    queryKey: ['authUser'],
+    queryFn: queryAuthUser,
+  });
+  const queryClient = useQueryClient();
+
+  const { mutate: deletePost, isPending } = useMutation({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/posts/${post._id}`, { method: 'DELETE' });
+        const data = (await res.json()) as ApplicationResponse<
+          object | IMessageAsResponse
+        >;
+        if (!res.ok) {
+          if ('error' in data) {
+            if (data.error) throw new Error(data.error as string);
+          }
+          throw new Error('Something went wrong');
+        }
+        return data;
+      } catch (error) {
+        console.log('Error in Post,deletePostMutation', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success('Post deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+  });
   const postOwner = post.user;
   const isLiked = false;
 
-  const isMyPost = true;
+  const isMyPost = authUser?._id === postOwner._id;
 
   const formattedDate = '1h';
 
   const isCommenting = false;
 
-  const handleDeletePost = () => {};
+  const handleDeletePost = () => {
+    deletePost();
+  };
 
   const handlePostComment = (e: FormEvent) => {
     e.preventDefault();
   };
 
   const handleLikePost = () => {};
+  if (isLoading) return <LoadingSpinner size='sm' />;
 
   return (
     <>
@@ -53,10 +95,13 @@ const Post = ({ post }) => {
             </span>
             {isMyPost && (
               <span className='flex justify-end flex-1'>
-                <FaTrash
-                  className='cursor-pointer hover:text-red-500'
-                  onClick={handleDeletePost}
-                />
+                {!isPending && (
+                  <FaTrash
+                    className='cursor-pointer hover:text-red-500'
+                    onClick={handleDeletePost}
+                  />
+                )}
+                {isPending && <LoadingSpinner size='sm' />}
               </span>
             )}
           </div>

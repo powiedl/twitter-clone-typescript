@@ -9,7 +9,7 @@ import { useQuery } from '@tanstack/react-query';
 import LoadingSpinner from './components/common/LoadingSpinner';
 import NotificationPage from './pages/notification/NoificationPage';
 import ProfilePage from './pages/profile/ProfilePage';
-import { queryAuthUser } from './queries/authUser';
+import { queryAuthUser } from './queries/authUser.query';
 
 function App() {
   const { data: authUser, isLoading } = useQuery({
@@ -24,7 +24,6 @@ function App() {
       </div>
     );
   }
-  console.log('App,authUser', authUser);
   return (
     <div className='flex max-w-6xl mx-auto'>
       {authUser && <Sidebar />}

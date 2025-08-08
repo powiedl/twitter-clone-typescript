@@ -13,7 +13,6 @@ export const queryAuthUser = async () => {
       throw new Error('Something went wrong');
     }
     if ('error' in data) throw new Error(data.error as string);
-    console.log('authUser is here', data);
     return data;
   } catch (error) {
     console.log('Error in App,useQuery', error);

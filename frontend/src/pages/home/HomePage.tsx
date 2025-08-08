@@ -2,9 +2,10 @@ import { useState } from 'react';
 
 import Posts from '../../components/common/Posts';
 import CreatePost from './CreatePost';
+import { EFeedType } from '../../components/common/Posts';
 
 const HomePage = () => {
-  const [feedType, setFeedType] = useState('forYou');
+  const [feedType, setFeedType] = useState<EFeedType>(EFeedType.FOR_YOU);
 
   return (
     <>
@@ -15,19 +16,19 @@ const HomePage = () => {
             className={
               'flex justify-center flex-1 p-3 hover:bg-secondary transition duration-300 cursor-pointer relative'
             }
-            onClick={() => setFeedType('forYou')}
+            onClick={() => setFeedType(EFeedType.FOR_YOU)}
           >
             For you
-            {feedType === 'forYou' && (
+            {feedType === EFeedType.FOR_YOU && (
               <div className='absolute bottom-0 w-10  h-1 rounded-full bg-primary'></div>
             )}
           </div>
           <div
             className='flex justify-center flex-1 p-3 hover:bg-secondary transition duration-300 cursor-pointer relative'
-            onClick={() => setFeedType('following')}
+            onClick={() => setFeedType(EFeedType.FOLLOWING)}
           >
             Following
-            {feedType === 'following' && (
+            {feedType === EFeedType.FOLLOWING && (
               <div className='absolute bottom-0 w-10  h-1 rounded-full bg-primary'></div>
             )}
           </div>
@@ -37,7 +38,7 @@ const HomePage = () => {
         <CreatePost />
 
         {/* POSTS */}
-        <Posts />
+        <Posts feedType={feedType} />
       </div>
     </>
   );
