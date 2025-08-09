@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useMutation } from '@tanstack/react-query';
 
 import type { ICreateUser } from '../../../../../backend/types/auth.types';
-import type { ApplicationResponse } from '../../../../../backend/types/express.types';
+import type { ApplicationError } from '../../../../../backend/types/express.types';
 import { MdOutlineMail } from 'react-icons/md';
 import { FaUser } from 'react-icons/fa';
 import { MdPassword } from 'react-icons/md';
@@ -27,14 +27,14 @@ const SignUpPage = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(newUser),
         });
-        const data = (await res.json()) as ApplicationResponse<ICreateUser>;
+        const data = (await res.json()) as ICreateUser | ApplicationError;
         if (!res.ok) {
           if ('error' in data) {
-            if (data.error) throw new Error(data.error as string);
+            if (data.error) throw new Error(data.error);
           }
           throw new Error('Something went wrong');
         }
-        if ('error' in data) throw new Error(data.error as string);
+        if ('error' in data) throw new Error(data.error);
         return data;
       } catch (error) {
         console.log('Error in signup,mutationFn', error);

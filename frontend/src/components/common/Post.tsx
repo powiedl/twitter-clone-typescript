@@ -10,7 +10,7 @@ import { queryAuthUser } from '../../queries/authUser.query';
 import type { IPopulatedPost } from '../../../../backend/controllers/post.controller';
 import LoadingSpinner from './LoadingSpinner';
 import type {
-  ApplicationResponse,
+  ApplicationError,
   IMessageAsResponse,
 } from '../../../../backend/types/express.types';
 import toast from 'react-hot-toast';
@@ -31,9 +31,10 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
     mutationFn: async () => {
       try {
         const res = await fetch(`/api/posts/${post._id}`, { method: 'DELETE' });
-        const data = (await res.json()) as ApplicationResponse<
-          object | IMessageAsResponse
-        >;
+        const data = (await res.json()) as
+          | object
+          | ApplicationError
+          | IMessageAsResponse;
         if (!res.ok) {
           if ('error' in data) {
             if (data.error) throw new Error(data.error as string);

@@ -6,7 +6,7 @@ import XSvg from '../../../components/svgs/X';
 import { MdOutlineMail } from 'react-icons/md';
 import { MdPassword } from 'react-icons/md';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import type { ApplicationResponse } from '../../../../../backend/types/express.types';
+import type { ApplicationError } from '../../../../../backend/types/express.types';
 import toast from 'react-hot-toast';
 
 interface IFormData {
@@ -34,14 +34,14 @@ const LoginPage = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(loginData),
         });
-        const data = (await res.json()) as ApplicationResponse<IFormData>;
+        const data = (await res.json()) as ApplicationError | IFormData;
         if (!res.ok) {
           if ('error' in data) {
-            if (data.error) throw new Error(data.error as string);
+            if (data.error) throw new Error(data.error);
           }
           throw new Error('Something went wrong');
         }
-        if ('error' in data) throw new Error(data.error as string);
+        if ('error' in data) throw new Error(data.error);
         return data;
       } catch (error) {
         console.log('Error in login,mutationFn', error);

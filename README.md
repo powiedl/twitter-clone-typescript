@@ -418,17 +418,17 @@ const res = await fetch('/api/auth/signup', {
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify(newUser),
 });
-const data = (await res.json()) as ApplicationResponse<ICreateUser>;
+const data = (await res.json()) as ICreateUser | ApplicationError;
 if (!res.ok) {
   if ('error' in data) {
-    if (data.error) throw new Error(data.error as string);
+    if (data.error) throw new Error(data.error);
   }
   throw new Error('Something went wrong');
 }
-if ('error' in data) throw new Error(data.error as string);
+if ('error' in data) throw new Error(data.error);
 return data;
 ```
 
-We do not type the fetch itself (as it seems it is not a generic function). Instead we type the res.json(). Remember: If you want to access an attribute in a type union (which doesn't exist in every type) you have to verify, if your current data has that attribute (which is the reason for the `('error' in data)`). The last if statement is maybe redundant (but as I don't know if there might be a situation where res.ok is true, but there is an error attribute I put it in there).
+We do not type the fetch itself (as it seems it is not a generic function). Instead we type the res.json(). res.json() only gets you the "body" part of the response - and in the backend we use a generic to type the whole response (and the first type parameter is the type of the body - but we add the ApplicationError type to it inside of the ApplicationResponse type - so we need to add it in the frontend too. Remember: If you want to access an attribute in a type union (which doesn't exist in every type) you have to verify, if your current data has that attribute (which is the reason for the `('error' in data)`). The last if statement is maybe redundant (but as I don't know if there might be a situation where res.ok is true, but there is an error attribute I put it in there).
 
-And the `as string` in data.error is needed, because Typescript is not aware, that data.error is a string (although it is defined in ApplicationError and ApplicationResponse is a type union which contains ApplicationError). But TypeScript knows, that it must be a string, if it is present (because if you try `as number` or `as {error:string}` you get a TypeScript errror immeadiatly).
+In the first run I've mistyped the data as `ApplicationResponse<ICreateUser>` (and maybe I've forgotten to correct it in some places so don't get confused about this - it is wrong).

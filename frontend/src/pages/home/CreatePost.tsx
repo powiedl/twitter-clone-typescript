@@ -5,7 +5,7 @@ import { IoCloseSharp } from 'react-icons/io5';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { queryAuthUser } from '../../queries/authUser.query';
 import type {
-  ApplicationResponse,
+  ApplicationError,
   IMessageAsResponse,
 } from '../../../../backend/types/express.types';
 import type { IPostWithId } from '../../../../backend/models/post.model';
@@ -34,12 +34,13 @@ const CreatePost = () => {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, img }),
         });
-        const data = (await res.json()) as ApplicationResponse<
-          IPostWithId | IMessageAsResponse
-        >;
+        const data = (await res.json()) as
+          | ApplicationError
+          | IPostWithId
+          | IMessageAsResponse;
         if (!res.ok) {
           if ('error' in data) {
-            if (data.error) throw new Error(data.error as string);
+            if (data.error) throw new Error(data.error);
           }
           throw new Error('Something went wrong');
         }

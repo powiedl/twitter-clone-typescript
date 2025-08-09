@@ -7,7 +7,7 @@ import { Link } from 'react-router-dom';
 import { BiLogOut } from 'react-icons/bi';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
-  ApplicationResponse,
+  ApplicationError,
   IMessageAsResponse,
 } from '../../../../backend/types/express.types';
 import toast from 'react-hot-toast';
@@ -23,15 +23,15 @@ const Sidebar = () => {
           method: 'POST',
         });
         const data = (await res.json()) as
-          | ApplicationResponse<object>
+          | ApplicationError
           | IMessageAsResponse;
         if (!res.ok) {
           if ('error' in data) {
-            if (data.error) throw new Error(data.error as string);
+            if (data.error) throw new Error(data.error);
           }
           throw new Error('Something went wrong');
         }
-        if ('error' in data) throw new Error(data.error as string);
+        if ('error' in data) throw new Error(data.error);
         return data;
       } catch (error) {
         console.log('Error in Sidebar,logoutMutation', error);

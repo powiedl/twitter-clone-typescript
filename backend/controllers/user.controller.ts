@@ -54,8 +54,8 @@ export const getSuggestedUsers = async (
       isFollowing: false,
     })); // add isFollowing to the list of the filteredUsers
     suggestedUsers.slice(0, 4); // we can't reduce the sample size in the aggregate because after aggregation users I'm already following are filtered out
-    console.log('suggestedUsers:', suggestedUsers);
-    res.status(200).json(suggestedUsers as IUserAsResponse[]);
+    console.log('#suggestedUsers:', suggestedUsers.length);
+    res.status(200).json(suggestedUsers.slice(0, 4) as IUserAsResponse[]);
   } catch (error: unknown) {
     res.status(500).json({ error: 'Internal Server Error' });
     controllerError(error, 'getSuggestedUsers in user.controller.ts');
