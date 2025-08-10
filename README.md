@@ -310,6 +310,17 @@ In addition I've also added a notification for a new comment (which is - beside 
 
 In the **likeUnlikePost** I've struggled again with Types.ObjectId and Schema.Types.ObjectId - but didn't find away around (except using @ts-ignore two times).
 
+In the frontend part of the course we changed the return of likeUnlikePost so that it returns a list of the user-ids that like the post. As I also need the message (to determine in the frontend if the post was liked or unliked) I had change the response of the likeUnlikePost controller to `res: ApplicationResponse<{ likes?: string[] } | IMessageAsResponse>`. I'll show the unlike part, the like part is quite similar.
+
+```typescript
+const updatedLikes = post.likes
+  .filter((id) => id.toString() !== userId.toString())
+  .map((l) => l.toString());
+return res
+  .status(200)
+  .json({ message: 'Post unliked successfully', likes: updatedLikes });
+```
+
 For the function **getUserPosts** I've created a stripped down User type (`IForeignUser` defined in `types/user.types.ts`) where I omit "secret" attributes:
 
 ```typescript
@@ -432,3 +443,87 @@ return data;
 We do not type the fetch itself (as it seems it is not a generic function). Instead we type the res.json(). res.json() only gets you the "body" part of the response - and in the backend we use a generic to type the whole response (and the first type parameter is the type of the body - but we add the ApplicationError type to it inside of the ApplicationResponse type - so we need to add it in the frontend too. Remember: If you want to access an attribute in a type union (which doesn't exist in every type) you have to verify, if your current data has that attribute (which is the reason for the `('error' in data)`). The last if statement is maybe redundant (but as I don't know if there might be a situation where res.ok is true, but there is an error attribute I put it in there).
 
 In the first run I've mistyped the data as `ApplicationResponse<ICreateUser>` (and maybe I've forgotten to correct it in some places so don't get confused about this - it is wrong).
+
+## Post.tsx
+
+The logic inside the **Post.tsx** is also remarkable different to the Javascript implementation. I've typed the useMutation as an intersection of `IMessageAsResponse` and `{likes?:string[]}`. I've declared likes as optional and an array of strings (which include the user ids).
+
+```typescript
+  const { mutate: likePost, isPending: isLiking } = useMutation<
+    (IMessageAsResponse & { likes?: string[] }) | ApplicationError,
+    void
+  >({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/posts/like/${post._id}`, {
+          method: 'POST',
+        });
+        const data = (await res.json()) as
+          | ApplicationError
+          | IMessageAsResponse;
+        if (!res.ok) {
+          if ('error' in data) {
+            if (data.error) throw new Error(data.error);
+          }
+          throw new Error('Something went wrong');
+        }
+        return data;
+      } catch (error) {
+        console.log('Error in Post,likePostMutation', error);
+        throw error;
+      }
+    },
+    onSuccess: (
+      data: (IMessageAsResponse & { likes?: string[] }) | ApplicationError # | ApplicationError is needed, because
+    ) => {
+      if ('message' in data) toast.success(data.message);
+
+      // this is not the best user expericence - because it invalidates all the posts
+      // queryClient.invalidateQueries({ queryKey: ['posts'] });
+
+      // instead update the cache directly for that post
+      if ('likes' in data) {
+        queryClient.setQueryData(['posts'], (oldData: IPopulatedPost[]) => {
+          return oldData.map((p) => {
+            if (p._id === post._id) {
+              return {
+                ...p,
+                likes: data.likes
+                  ? data.likes.map((i) => ({
+                      _id: i,
+                    }))
+                  : {},
+              };
+            }
+            return p;
+          });
+        });
+      }
+    },
+    onError: (error: unknown) => {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        typeof error.message === 'string'
+      )
+        toast.error(error.message);
+      else
+        toast.error(
+          'Something went wrong (and there are no further details to show you what went wrong)'
+        );
+    },
+  });
+  const postOwner = post.user;
+
+  const isMyPost = isIUserWithId(authUser) && authUser._id === postOwner._id;
+  const isLiked = authUser?._id
+    ? post.likes
+        .map((l) => l?._id?.toString() || 'invalid-id')
+        .includes(authUser?._id?.toString())
+    : false;
+```
+
+The onSuccess is a little complicated, because from the likeUnlike API we only get an array of the user ids, which like the post, but from the original posts api we get some "meta" data of the users, who like the post. So we need to transform the data from the likeUnlike API to match the data from the posts api (and because we only use the user id, I only populate the user id into an array of objects - each object with a single attribute - the \_id).
+
+With the setQueryData we can directly manipulate the cache of the query - without running the query again and without invalidating the whole query. In this scenario we only change one single post, so it would be a bad user experience to invalidate all posts and query them again from the backend.

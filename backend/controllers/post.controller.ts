@@ -37,7 +37,13 @@ export const getAllPosts = async (
     const posts = await Post.find()
       .sort({ createdAt: -1 })
       .populate('user', '-password') // simple form
-      .populate({ path: 'comments.user', select: ['fullName', 'profileImg'] }); // extended form - where you pass an object with the specification of the population
+      .populate({ path: 'comments.user', select: ['fullName', 'profileImg'] }) // extended form - where you pass an object with the specification of the population
+      .populate({
+        path: 'likes',
+        // model: 'User', // you can define which model should be used to populate this path (but it is not needed in this case)
+        select: ['fullName', 'profilePic', 'bio'],
+      });
+
     if (posts.length === 0) return res.status(200).json([]);
 
     // @ts-expect-error TypeScript cannot check, that likedPosts is of type IPopulatedPosts[]
@@ -259,7 +265,7 @@ export const commentOnPost = async (
 
 export const likeUnlikePost = async (
   req: TypedAuthorizedRequestBody<{}, { id: Types.ObjectId }>,
-  res: ApplicationResponse<{} | IMessageAsResponse>
+  res: ApplicationResponse<{ likes?: string[] } | IMessageAsResponse>
 ) => {
   try {
     const userId = req.user!._id;
@@ -277,7 +283,13 @@ export const likeUnlikePost = async (
       // unlike the post
       await Post.updateOne({ _id: postId }, { $pull: { likes: userId } }); // remove userId from the likes for this post
       await User.updateOne({ _id: userId }, { $pull: { likedPosts: postId } });
-      return res.status(200).json({ message: 'Post unliked successfully' });
+
+      const updatedLikes = post.likes
+        .filter((id) => id.toString() !== userId.toString())
+        .map((l) => l.toString());
+      return res
+        .status(200)
+        .json({ message: 'Post unliked successfully', likes: updatedLikes });
     } else {
       // like the post
       // @ts-ignore
@@ -290,7 +302,10 @@ export const likeUnlikePost = async (
         to: post.user,
       });
       await newNotification.save();
-      return res.status(200).json({ message: 'Post liked successfully' });
+      return res.status(200).json({
+        message: 'Post liked successfully',
+        likes: post.likes.map((l) => l.toString()),
+      });
     }
   } catch (error) {
     controllerError('likeUnlikePost in post.controller.ts');

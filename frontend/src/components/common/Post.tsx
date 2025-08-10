@@ -27,7 +27,7 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
   });
   const queryClient = useQueryClient();
 
-  const { mutate: deletePost, isPending } = useMutation({
+  const { mutate: deletePost, isPending: isDeleting } = useMutation({
     mutationFn: async () => {
       try {
         const res = await fetch(`/api/posts/${post._id}`, { method: 'DELETE' });
@@ -52,11 +52,80 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
       queryClient.invalidateQueries({ queryKey: ['posts'] });
     },
   });
+
+  const { mutate: likePost, isPending: isLiking } = useMutation<
+    (IMessageAsResponse & { likes?: string[] }) | ApplicationError,
+    void
+  >({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/posts/like/${post._id}`, {
+          method: 'POST',
+        });
+        const data = (await res.json()) as
+          | ApplicationError
+          | IMessageAsResponse;
+        if (!res.ok) {
+          if ('error' in data) {
+            if (data.error) throw new Error(data.error);
+          }
+          throw new Error('Something went wrong');
+        }
+        return data;
+      } catch (error) {
+        console.log('Error in Post,likePostMutation', error);
+        throw error;
+      }
+    },
+    onSuccess: (
+      data: (IMessageAsResponse & { likes?: string[] }) | ApplicationError
+    ) => {
+      if ('message' in data) toast.success(data.message);
+
+      // this is not the best user expericence - because it invalidates all the posts
+      // queryClient.invalidateQueries({ queryKey: ['posts'] });
+
+      // instead update the cache directly for that post
+      if ('likes' in data) {
+        queryClient.setQueryData(['posts'], (oldData: IPopulatedPost[]) => {
+          return oldData.map((p) => {
+            if (p._id === post._id) {
+              return {
+                ...p,
+                likes: data.likes
+                  ? data.likes.map((i) => ({
+                      _id: i,
+                    }))
+                  : {},
+              };
+            }
+            return p;
+          });
+        });
+      }
+    },
+    onError: (error: unknown) => {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        typeof error.message === 'string'
+      )
+        toast.error(error.message);
+      else
+        toast.error(
+          'Something went wrong (and there are no further details to show you what went wrong)'
+        );
+    },
+  });
   const postOwner = post.user;
-  const isLiked = false;
 
   const isMyPost = isIUserWithId(authUser) && authUser._id === postOwner._id;
-
+  const isLiked = authUser?._id
+    ? post.likes
+        .map((l) => l?._id?.toString() || 'invalid-id')
+        .includes(authUser?._id?.toString())
+    : false;
   const formattedDate = '1h';
 
   const isCommenting = false;
@@ -69,7 +138,10 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
     e.preventDefault();
   };
 
-  const handleLikePost = () => {};
+  const handleLikePost = () => {
+    if (isLiking) return;
+    likePost();
+  };
   if (isLoading) return <LoadingSpinner size='sm' />;
 
   return (
@@ -97,13 +169,13 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
             </span>
             {isMyPost && (
               <span className='flex justify-end flex-1'>
-                {!isPending && (
+                {!isDeleting && (
                   <FaTrash
                     className='cursor-pointer hover:text-red-500'
                     onClick={handleDeletePost}
                   />
                 )}
-                {isPending && <LoadingSpinner size='sm' />}
+                {isDeleting && <LoadingSpinner size='sm' />}
               </span>
             )}
           </div>
@@ -184,11 +256,7 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
                       onChange={(e) => setComment(e.target.value)}
                     />
                     <button className='btn btn-primary rounded-full btn-sm text-white px-4'>
-                      {isCommenting ? (
-                        <span className='loading loading-spinner loading-md'></span>
-                      ) : (
-                        'Post'
-                      )}
+                      {isCommenting ? <LoadingSpinner size='md' /> : 'Post'}
                     </button>
                   </form>
                 </div>
@@ -206,16 +274,17 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
                 className='flex gap-1 items-center group cursor-pointer'
                 onClick={handleLikePost}
               >
-                {!isLiked && (
+                {isLiking && <LoadingSpinner size='sm' />}
+                {!isLiked && !isLiking && (
                   <FaRegHeart className='w-4 h-4 cursor-pointer text-slate-500 group-hover:text-pink-500' />
                 )}
-                {isLiked && (
+                {isLiked && !isLiking && (
                   <FaRegHeart className='w-4 h-4 cursor-pointer text-pink-500 ' />
                 )}
 
                 <span
-                  className={`text-sm text-slate-500 group-hover:text-pink-500 ${
-                    isLiked ? 'text-pink-500' : ''
+                  className={`text-sm group-hover:text-pink-500 ${
+                    isLiked ? 'text-pink-500' : ' text-slate-500'
                   }`}
                 >
                   {post.likes.length}
