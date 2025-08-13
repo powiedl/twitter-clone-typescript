@@ -44,7 +44,7 @@ export const getSuggestedUsers = async (
       },
       { $sample: { size: 10 } }, // return max 10 users
     ]);
-    console.log('#users (excluding me):', users.length);
+    //console.log('#users (excluding me):', users.length);
     const filteredUsers: IUserAsResponse[] = users.filter(
       (user) => !usersFollowedByMe.includes(user._id)
     ); // exclude users I'm already following

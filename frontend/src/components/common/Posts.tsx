@@ -53,7 +53,6 @@ const Posts = ({ feedType }: { feedType: EFeedType }) => {
   if (!('length' in posts)) return noPosts;
   if (posts.length === 0) return noPosts;
   if (!('_id' in posts[0])) return noPosts;
-  console.log(posts[-1]);
 
   return (
     <>

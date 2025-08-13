@@ -15,6 +15,7 @@ import type {
 } from '../../../../backend/types/express.types';
 import toast from 'react-hot-toast';
 import { isIUserWithId } from '../../../../backend/types/auth.types';
+import { formatPostDate } from '../../utils/date';
 
 /* TODO: Create Type for post */
 /* TODO: Create Type for comment */
@@ -118,6 +119,60 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
         );
     },
   });
+
+  const { mutate: commentPost, isPending: isCommenting } = useMutation<
+    IPopulatedPost | ApplicationError,
+    void
+  >({
+    mutationFn: async () => {
+      try {
+        const res = await fetch(`/api/posts/comment/${post._id}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text: comment }),
+        });
+        const data = (await res.json()) as IPopulatedPost | ApplicationError;
+        if (!res.ok) {
+          if ('error' in data) {
+            if (data.error) throw new Error(data.error);
+          }
+          throw new Error('Something went wrong');
+        }
+        return data;
+      } catch (error) {
+        console.log('Error in Post,commentPostMutation', error);
+        throw error;
+      }
+    },
+    onSuccess: (data: IPopulatedPost | ApplicationError) => {
+      toast.success('Post commented successfully');
+      setComment('');
+      //queryClient.invalidateQueries({ queryKey: ['posts'] });
+      if ('_id' in data) {
+        queryClient.setQueryData(['posts'], (oldData: IPopulatedPost[]) => {
+          return oldData.map((p) => {
+            if (p._id === post._id) {
+              return data;
+            }
+            return p;
+          });
+        });
+      }
+    },
+    onError: (error: unknown) => {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        typeof error.message === 'string'
+      )
+        toast.error(error.message);
+      else
+        toast.error(
+          'Something went wrong (and there are no further details to show you what went wrong)'
+        );
+    },
+  });
   const postOwner = post.user;
 
   const isMyPost = isIUserWithId(authUser) && authUser._id === postOwner._id;
@@ -126,16 +181,15 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
         .map((l) => l?._id?.toString() || 'invalid-id')
         .includes(authUser?._id?.toString())
     : false;
-  const formattedDate = '1h';
-
-  const isCommenting = false;
-
+  const formattedDate = formatPostDate(post.createdAt);
   const handleDeletePost = () => {
     deletePost();
   };
 
   const handlePostComment = (e: FormEvent) => {
     e.preventDefault();
+    if (isCommenting || !comment) return;
+    commentPost();
   };
 
   const handleLikePost = () => {
@@ -143,6 +197,7 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
     likePost();
   };
   if (isLoading) return <LoadingSpinner size='sm' />;
+  console.log(post);
 
   return (
     <>
@@ -255,7 +310,10 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
                       value={comment}
                       onChange={(e) => setComment(e.target.value)}
                     />
-                    <button className='btn btn-primary rounded-full btn-sm text-white px-4'>
+                    <button
+                      className='btn btn-primary rounded-full btn-sm text-white px-4'
+                      disabled={isCommenting || !comment}
+                    >
                       {isCommenting ? <LoadingSpinner size='md' /> : 'Post'}
                     </button>
                   </form>

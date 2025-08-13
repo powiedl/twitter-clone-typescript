@@ -24,8 +24,8 @@ export interface IPopulatedPost {
   comments: (ICreateComment & { user: IForeignUser })[];
   text: string;
   img: string;
-  // createdAt: Date;
-  // updatedAt: Date;
+  createdAt: Date | string;
+  updatedAt: Date | string;
   __v: number;
 }
 
