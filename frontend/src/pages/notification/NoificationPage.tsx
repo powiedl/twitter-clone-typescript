@@ -3,9 +3,67 @@ import LoadingSpinner from '../../components/common/LoadingSpinner';
 
 import { IoSettingsOutline } from 'react-icons/io5';
 import { FaUser } from 'react-icons/fa';
-import { FaHeart } from 'react-icons/fa6';
+import { FaHeart, FaNoteSticky } from 'react-icons/fa6';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { queryNotifications } from '../../queries/notifications.query';
+import type {
+  ApplicationError,
+  IMessageAsResponse,
+} from '../../../../backend/types/express.types';
+import toast from 'react-hot-toast';
 
 const NotificationPage = () => {
+  const queryClient = useQueryClient();
+  const {
+    data: notifications,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['notifications'],
+    queryFn: queryNotifications,
+  });
+  const { mutate: deleteNotifications, isPending } = useMutation<
+    IMessageAsResponse | ApplicationError,
+    void
+  >({
+    mutationFn: async () => {
+      try {
+        const res = await fetch('/api/notifications', { method: 'DELETE' });
+        const data = (await res.json()) as
+          | IMessageAsResponse
+          | ApplicationError;
+        if (!res.ok) {
+          if ('error' in data) {
+            if (data.error) throw new Error(data.error);
+          }
+          throw new Error('Something went wrong');
+        }
+        return data;
+      } catch (error) {
+        console.log('Error in Post,deleteNotificationsMutation', error);
+        throw error;
+      }
+    },
+    onSuccess: () => {
+      toast.success('Notifications deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+    },
+    onError: (error: unknown) => {
+      if (
+        error &&
+        typeof error === 'object' &&
+        'message' in error &&
+        typeof error.message === 'string'
+      )
+        toast.error(error.message);
+      else
+        toast.error(
+          'Something went wrong (and there are no further details to show you what went wrong)'
+        );
+    },
+  });
+  /*
   const isLoading = false;
   const notifications = [
     {
@@ -27,9 +85,10 @@ const NotificationPage = () => {
       type: 'like',
     },
   ];
+*/
 
-  const deleteNotifications = () => {
-    alert('All notifications deleted');
+  const handleDeleteNotifications = () => {
+    deleteNotifications();
   };
 
   return (
@@ -46,7 +105,14 @@ const NotificationPage = () => {
               className='dropdown-content z-[1] menu p-2 shadow bg-base-100 rounded-box w-52'
             >
               <li>
-                <a onClick={deleteNotifications}>Delete all notifications</a>
+                <button
+                  onClick={handleDeleteNotifications}
+                  disabled={isPending}
+                >
+                  {isPending
+                    ? 'Deleting notifications...'
+                    : 'Delete all notifications'}
+                </button>
               </li>
             </ul>
           </div>
@@ -56,41 +122,53 @@ const NotificationPage = () => {
             <LoadingSpinner size='lg' />
           </div>
         )}
-        {notifications?.length === 0 && (
+        {!isLoading && isError && (
+          <div className='text-center font-bold text-red-500'>
+            {error.message}
+          </div>
+        )}
+        {!isLoading && !isError && notifications?.length === 0 && (
           <div className='text-center p-4 font-bold'>No notifications 🤔</div>
         )}
-        {notifications?.map((notification) => (
-          <div className='border-b border-gray-700' key={notification._id}>
-            <div className='flex gap-2 p-4'>
-              {notification.type === 'follow' && (
-                <FaUser className='w-7 h-7 text-primary' />
-              )}
-              {notification.type === 'like' && (
-                <FaHeart className='w-7 h-7 text-red-500' />
-              )}
-              <Link to={`/profile/${notification.from.username}`}>
-                <div className='avatar'>
-                  <div className='w-8 rounded-full'>
-                    <img
-                      src={
-                        notification.from.profileImg ||
-                        '/avatar-placeholder.png'
-                      }
-                    />
+        {!isLoading &&
+          !isError &&
+          notifications?.map((notification) => (
+            <div className='border-b border-gray-700' key={notification._id}>
+              <div className='flex gap-2 p-4'>
+                {notification.type === 'follow' && (
+                  <FaUser className='w-7 h-7 text-primary' />
+                )}
+                {notification.type === 'like' && (
+                  <FaHeart className='w-7 h-7 text-red-500' />
+                )}
+                {notification.type === 'comment' && (
+                  <FaNoteSticky className='w-7 h-7 text-primary' />
+                )}
+                <Link to={`/profile/${notification.from.username}`}>
+                  <div className='avatar'>
+                    <div className='w-8 rounded-full'>
+                      <img
+                        src={
+                          notification.from.profileImg ||
+                          '/avatar-placeholder.png'
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
-                <div className='flex gap-1'>
-                  <span className='font-bold'>
-                    @{notification.from.username}
-                  </span>{' '}
-                  {notification.type === 'follow'
-                    ? 'followed you'
-                    : 'liked your post'}
-                </div>
-              </Link>
+                  <div className='flex gap-1'>
+                    <span className='font-bold'>
+                      @{notification.from.username}
+                    </span>{' '}
+                    {notification.type === 'follow'
+                      ? 'followed you'
+                      : notification.type === 'comment'
+                      ? 'commented your post'
+                      : 'liked your post'}
+                  </div>
+                </Link>
+              </div>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
     </>
   );

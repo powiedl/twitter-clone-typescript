@@ -197,7 +197,7 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
     likePost();
   };
   if (isLoading) return <LoadingSpinner size='sm' />;
-  console.log(post);
+  //console.log(post);
 
   return (
     <>
