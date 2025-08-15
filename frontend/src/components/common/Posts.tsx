@@ -8,21 +8,43 @@ import { useEffect } from 'react';
 export enum EFeedType {
   FOR_YOU = 'FOR_YOU',
   FOLLOWING = 'FOLLOWING',
+  POSTS = 'POSTS',
+  LIKES = 'LIKES',
 }
 
-const getPostEndpoint = (feedType: EFeedType): string | undefined => {
+const getPostEndpoint = (
+  feedType: EFeedType,
+  username: string,
+  userId: string
+): string | undefined => {
   switch (feedType) {
     case EFeedType.FOR_YOU:
       return '/api/posts/all';
     case EFeedType.FOLLOWING:
       return '/api/posts/following';
+    case EFeedType.POSTS:
+      return `/api/posts/user/${username}`;
+    case EFeedType.LIKES:
+      return `/api/posts/likes/${userId}`;
     default:
       shouldBeUnreachable(feedType);
   }
 };
 
-const Posts = ({ feedType }: { feedType: EFeedType }) => {
-  const POST_ENDPOINT = getPostEndpoint(feedType);
+const Posts = ({
+  feedType,
+  username,
+  userId,
+}: {
+  feedType: EFeedType;
+  username?: string;
+  userId?: string;
+}) => {
+  const POST_ENDPOINT = getPostEndpoint(
+    feedType,
+    username || 'invalid-username',
+    userId || 'invalid-objectid'
+  );
   const noPosts = (
     <p className='text-center my-4'>No posts in this tab. Switch 👻</p>
   );
@@ -38,7 +60,7 @@ const Posts = ({ feedType }: { feedType: EFeedType }) => {
 
   useEffect(() => {
     refetch();
-  }, [feedType, refetch]);
+  }, [feedType, refetch, username]);
 
   if (isLoading || isRefetching)
     return (

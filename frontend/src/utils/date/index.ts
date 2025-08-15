@@ -1,4 +1,7 @@
-export const formatPostDate = (createdAt: string | Date) => {
+export const formatPostDate = (
+  createdAt: string | Date | undefined
+): string => {
+  if (typeof createdAt === 'undefined') return '';
   const currentDate = new Date();
   const createdAtDate =
     createdAt instanceof Date ? createdAt : new Date(createdAt);
@@ -26,8 +29,11 @@ export const formatPostDate = (createdAt: string | Date) => {
   }
 };
 
-export const formatMemberSinceDate = (createdAt: string) => {
-  const date = new Date(createdAt);
+export const formatMemberSinceDate = (
+  createdAt: string | Date | undefined
+): string => {
+  if (typeof createdAt === 'undefined') return '';
+  const date = createdAt instanceof Date ? createdAt : new Date(createdAt);
   const months = [
     'January',
     'February',

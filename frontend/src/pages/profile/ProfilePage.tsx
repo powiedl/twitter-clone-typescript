@@ -1,7 +1,7 @@
-import { useRef, useState, type ChangeEvent } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState, type ChangeEvent } from 'react';
+import { Link, useParams } from 'react-router-dom';
 
-import Posts from '../../components/common/Posts';
+import Posts, { EFeedType } from '../../components/common/Posts';
 import ProfileHeaderSkeleton from '../../components/skeletons/ProfileHeaderSkeleton';
 import EditProfileModal from './EditProfileModal';
 
@@ -12,33 +12,45 @@ import { IoCalendarOutline } from 'react-icons/io5';
 import { FaLink } from 'react-icons/fa';
 import { MdEdit } from 'react-icons/md';
 import { useQuery } from '@tanstack/react-query';
-import { queryAuthUser } from '../../queries/authUser.query';
+import { queryProfile } from '../../queries/users.query';
+import { formatMemberSinceDate } from '../../utils/date';
 
 const ProfilePage = () => {
-  const { data: authUser, isLoading } = useQuery({
-    queryKey: ['authUser'],
-    queryFn: queryAuthUser,
-  });
+  const { username } = useParams();
+  // const { data: authUser, isLoading } = useQuery({
+  //   queryKey: ['authUser'],
+  //   queryFn: queryAuthUser,
+  // });
   const [coverImg, setCoverImg] = useState<string | null>(null);
   const [profileImg, setProfileImg] = useState<string | null>(null);
-  const [feedType, setFeedType] = useState('posts');
+  const [feedType, setFeedType] = useState<EFeedType>(EFeedType.POSTS);
 
   const coverImgRef = useRef(null);
   const profileImgRef = useRef(null);
 
   const isMyProfile = true;
 
-  const user = {
-    _id: '1',
-    fullName: 'John Doe',
-    username: 'johndoe',
-    profileImg: '/avatars/boy2.png',
-    coverImg: '/cover.png',
-    bio: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-    link: 'https://youtube.com/@asaprogrammer_',
-    following: ['1', '2', '3'],
-    followers: ['1', '2', '3'],
-  };
+  const {
+    data: user,
+    isLoading: isLoading,
+    refetch,
+    isRefetching,
+  } = useQuery({
+    queryKey: ['userProfile'],
+    queryFn: () => queryProfile(username),
+  });
+
+  // const user = {
+  //   _id: '1',
+  //   fullName: 'John Doe',
+  //   username: 'johndoe',
+  //   profileImg: '/avatars/boy2.png',
+  //   coverImg: '/cover.png',
+  //   bio: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
+  //   link: 'https://youtube.com/@asaprogrammer_',
+  //   following: ['1', '2', '3'],
+  //   followers: ['1', '2', '3'],
+  // };
 
   const handleImgChange = (
     e: ChangeEvent<HTMLInputElement>,
@@ -56,23 +68,33 @@ const ProfilePage = () => {
     }
   };
 
+  useEffect(() => {
+    refetch();
+  }, [username, refetch]);
+  if (user && 'message' in user)
+    return <>Something weird happened (${user.message})</>;
+  if (isLoading || isRefetching)
+    return (
+      <>
+        <div className='flex-[4_4_0]  border-r border-gray-700 min-h-screen '>
+          <ProfileHeaderSkeleton />
+        </div>
+      </>
+    );
   return (
     <>
       <div className='flex-[4_4_0]  border-r border-gray-700 min-h-screen '>
         {/* HEADER */}
-        {isLoading && <ProfileHeaderSkeleton />}
-        {!isLoading && !user && (
-          <p className='text-center text-lg mt-4'>User not found</p>
-        )}
+        {!user && <p className='text-center text-lg mt-4'>User not found</p>}
         <div className='flex flex-col'>
-          {!isLoading && user && (
+          {user && (
             <>
               <div className='flex gap-10 px-4 py-2 items-center'>
                 <Link to='/'>
                   <FaArrowLeft className='w-4 h-4' />
                 </Link>
                 <div className='flex flex-col'>
-                  <p className='font-bold text-lg'>{user?.fullName}</p>
+                  <p className='font-bold text-lg'>{user.fullName}</p>
                   <span className='text-sm text-slate-500'>
                     {POSTS?.length} posts
                   </span>
@@ -179,7 +201,7 @@ const ProfilePage = () => {
                   <div className='flex gap-2 items-center'>
                     <IoCalendarOutline className='w-4 h-4 text-slate-500' />
                     <span className='text-sm text-slate-500'>
-                      Joined July 2021
+                      {formatMemberSinceDate(user?.createdAt)}
                     </span>
                   </div>
                 </div>
@@ -201,19 +223,19 @@ const ProfilePage = () => {
               <div className='flex w-full border-b border-gray-700 mt-4'>
                 <div
                   className='flex justify-center flex-1 p-3 hover:bg-secondary transition duration-300 relative cursor-pointer'
-                  onClick={() => setFeedType('posts')}
+                  onClick={() => setFeedType(EFeedType.POSTS)}
                 >
                   Posts
-                  {feedType === 'posts' && (
+                  {feedType === EFeedType.POSTS && (
                     <div className='absolute bottom-0 w-10 h-1 rounded-full bg-primary' />
                   )}
                 </div>
                 <div
                   className='flex justify-center flex-1 p-3 text-slate-500 hover:bg-secondary transition duration-300 relative cursor-pointer'
-                  onClick={() => setFeedType('likes')}
+                  onClick={() => setFeedType(EFeedType.LIKES)}
                 >
                   Likes
-                  {feedType === 'likes' && (
+                  {feedType === EFeedType.LIKES && (
                     <div className='absolute bottom-0 w-10  h-1 rounded-full bg-primary' />
                   )}
                 </div>
@@ -221,10 +243,16 @@ const ProfilePage = () => {
             </>
           )}
 
-          <Posts />
+          <Posts
+            feedType={feedType}
+            username={username}
+            userId={user?._id.toString()}
+          />
         </div>
       </div>
     </>
   );
+  console.log('ProfilePage,user', user, 'isLoading', isLoading);
+  return <div>What happened now?</div>;
 };
 export default ProfilePage;

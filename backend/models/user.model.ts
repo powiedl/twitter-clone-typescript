@@ -9,6 +9,8 @@ export interface IUser extends ICreateUser {
   bio?: string;
   link?: string;
   likedPosts?: ObjectId[];
+  createdAt?: Date | string;
+  updatedAt?: Date | string;
 }
 
 export type IUserWithId = IUser & { _id: Types.ObjectId };
