@@ -15,11 +15,12 @@ export interface INotificationAsResponse {
   type: string;
   read: boolean;
 }
-function isValidNotificationTypeValue(n: any): boolean {
+function isValidNotificationTypeValue(n: unknown): boolean {
   if (typeof n !== 'string') return false;
   let result = false;
   Object.values(NotificationType).forEach((el) => {
-    if (result || n === el) result = true;
+    //if (result || n === el) result = true;
+    result = result || n === el;
   });
   return result;
 }
@@ -38,7 +39,7 @@ export const convertToINotificationAsResponse = (
     );
     return undefined;
   }
-  if (typeof n.type === 'string' && !isValidNotificationTypeValue(n.type)) {
+  if (!isValidNotificationTypeValue(n.type)) {
     console.log(`  failed, because type is no valid NotificationType`);
     return undefined;
   }
