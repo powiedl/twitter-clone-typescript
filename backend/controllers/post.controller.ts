@@ -21,7 +21,7 @@ export interface IPopulatedPost {
   _id: Types.ObjectId;
   user: IForeignUser;
   likes: IForeignUser[];
-  comments: (ICreateComment & { user: IForeignUser })[];
+  comments: (ICreateComment & { _id?: Types.ObjectId; user: IForeignUser })[];
   text: string;
   img: string;
   createdAt: Date | string;
@@ -37,12 +37,15 @@ export const getAllPosts = async (
     const { user } = req;
     const posts = await Post.find()
       .sort({ createdAt: -1 })
-      .populate('user', '-password') // simple form
+      .populate({
+        path: 'user',
+        select: ['_id', 'fullName', 'username', 'bio'],
+      })
       .populate({ path: 'comments.user', select: ['fullName', 'profileImg'] }) // extended form - where you pass an object with the specification of the population
       .populate({
         path: 'likes',
         // model: 'User', // you can define which model should be used to populate this path (but it is not needed in this case)
-        select: ['fullName', 'profilePic', 'bio'],
+        select: ['username', 'fullName', 'profileImg', 'bio'],
       });
     const foreignPosts = posts.filter((p) => {
       // @ts-expect-error because TypeScript isn't smart enough to understand that the populate modifies the type of posts
@@ -72,16 +75,16 @@ export const getLikedPosts = async (
       .sort({ createdAt: -1 })
       .populate({
         path: 'user',
-        select: ['fullName', 'profilePic', 'bio'],
+        select: ['fullName', 'username', 'profileImg', 'bio'],
       })
       .populate({
         path: 'likes',
         // model: 'User', // you can define which model should be used to populate this path (but it is not needed in this case)
-        select: ['fullName', 'profilePic', 'bio'],
+        select: ['fullName', 'profileImg', 'bio'],
       })
       .populate({
         path: 'comments.user',
-        select: ['fullName', 'profilePic', 'bio'],
+        select: ['fullName', 'profileImg', 'bio'],
       });
 
     // @ts-expect-error TypeScript cannot check, that likedPosts is of type IPopulatedPosts[]
@@ -104,16 +107,16 @@ export const getUserPosts = async (
       .sort({ createdAt: -1 })
       .populate({
         path: 'user',
-        select: ['fullName', 'profilePic', 'bio'],
+        select: ['fullName', 'username', 'profileImg', 'bio'],
       })
       .populate({
         path: 'likes',
         // model: 'User', // you can define which model should be used to populate this path (but it is not needed in this case)
-        select: ['fullName', 'profilePic', 'bio'],
+        select: ['fullName', 'profileImg', 'bio'],
       })
       .populate({
         path: 'comments.user',
-        select: ['fullName', 'profilePic', 'bio'],
+        select: ['fullName', 'profileImg', 'bio'],
       });
     // @ts-expect-error
     return res.status(200).json(posts);

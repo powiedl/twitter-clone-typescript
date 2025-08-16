@@ -273,7 +273,5 @@ const ProfilePage = () => {
       </div>
     </>
   );
-  console.log('ProfilePage,user', user, 'isLoading', isLoading);
-  return <div>What happened now?</div>;
 };
 export default ProfilePage;
