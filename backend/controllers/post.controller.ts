@@ -34,6 +34,7 @@ export const getAllPosts = async (
   res: ApplicationResponse<IPopulatedPost[]>
 ) => {
   try {
+    const { user } = req;
     const posts = await Post.find()
       .sort({ createdAt: -1 })
       .populate('user', '-password') // simple form
@@ -43,11 +44,14 @@ export const getAllPosts = async (
         // model: 'User', // you can define which model should be used to populate this path (but it is not needed in this case)
         select: ['fullName', 'profilePic', 'bio'],
       });
-
-    if (posts.length === 0) return res.status(200).json([]);
+    const foreignPosts = posts.filter((p) => {
+      // @ts-expect-error because TypeScript isn't smart enough to understand that the populate modifies the type of posts
+      return p.user?.username && p.user.username !== user?.username;
+    });
+    if (foreignPosts.length === 0) return res.status(200).json([]);
 
     // @ts-expect-error TypeScript cannot check, that likedPosts is of type IPopulatedPosts[]
-    res.status(200).json(posts);
+    res.status(200).json(foreignPosts);
   } catch (error) {
     controllerError('getAllPosts in post.controller.ts');
     return res.status(500).json({ error: 'Internal Server Error' });

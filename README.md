@@ -348,6 +348,8 @@ interface IPopulatedPost {
 
 But this does not match exactly what I get back from my mongoDB search and so I ended with one more `// @ts-expect-error` (above the return statement) in the **getUserPosts**.
 
+I've changed the logic for **getAllPosts** to exclude the posts of the user currently logged in. I wasn't able to create the correct mongoose query for the find method so I get all posts from mongoose and afterwards remove the ones, where the username of the author matches with the currently logged in user. It seems, that TypeScript doesn't understand how **.populate** changes the structure of the returned documents (so TypeScript is not aware that there should be a username in the user attribute of the document) - therefore I've used the @ts-expect-error directive again.
+
 ## notification.controller.ts
 
 In this controller I try a different approach in returning the data - I'm converting the data to a native JavaScript Object to avoid typing problems. If this works out as a good decision I think I will rework the other controllers as well. But it was hard work (for me) to write a suitable conversion function from the result I got from mongoose to a plain (minimized) Javascript object. Mongoose has a lean() method for results of queries, but this gives a plain Javascript object but with too many attributes.
