@@ -11,21 +11,15 @@ import { FaArrowLeft } from 'react-icons/fa6';
 import { IoCalendarOutline } from 'react-icons/io5';
 import { FaLink } from 'react-icons/fa';
 import { MdEdit } from 'react-icons/md';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { queryProfile } from '../../queries/users.query';
 import { formatMemberSinceDate } from '../../utils/date';
 import { queryAuthUser } from '../../queries/authUser.query';
 import useFollow from '../../hooks/useFollow';
-import type { IUserAsResponse } from '../../../../backend/types/auth.types';
-import type {
-  ApplicationError,
-  IMessageAsResponse,
-} from '../../../../backend/types/express.types';
-import toast from 'react-hot-toast';
+import useUpdateUserProfile from '../../hooks/useUpdateUserProfile';
 
 const ProfilePage = () => {
   const { username } = useParams();
-  const queryClient = useQueryClient();
   // const { data: authUser, isLoading } = useQuery({
   //   queryKey: ['authUser'],
   //   queryFn: queryAuthUser,
@@ -51,65 +45,13 @@ const ProfilePage = () => {
     queryKey: ['userProfile'],
     queryFn: () => queryProfile(username),
   });
-
-  const { mutate: updateProfile, isPending: isUpdatingProfile } = useMutation({
-    mutationFn: async () => {
-      try {
-        const res = await fetch('/api/users/update', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            coverImg,
-            profileImg,
-          }),
-        });
-        const data = (await res.json()) as
-          | IUserAsResponse
-          | IMessageAsResponse
-          | ApplicationError;
-        if (!res.ok) {
-          if ('error' in data) {
-            if (data.error) throw new Error(data.error);
-          }
-          throw new Error('Something went wrong');
-        }
-        return data;
-      } catch (error) {
-        console.log('Error in Post,deleteNotificationsMutation', error);
-        throw error;
-      }
-    },
-    onSuccess: () => {
-      toast.success('Profile updated successfully');
-      Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['authUser'] }),
-        queryClient.invalidateQueries({ queryKey: ['userProfile'] }),
-      ]);
-    },
-    onError: (error) => {
-      toast.error(error.message);
-    },
-  });
+  const { updateProfile, isUpdatingProfile } = useUpdateUserProfile();
 
   const isMyProfile =
     user &&
     'username' in user &&
     authUser &&
     user.username === authUser.username;
-
-  // const user = {
-  //   _id: '1',
-  //   fullName: 'John Doe',
-  //   username: 'johndoe',
-  //   profileImg: '/avatars/boy2.png',
-  //   coverImg: '/cover.png',
-  //   bio: 'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-  //   link: 'https://youtube.com/@asaprogrammer_',
-  //   following: ['1', '2', '3'],
-  //   followers: ['1', '2', '3'],
-  // };
 
   const handleImgChange = (
     e: ChangeEvent<HTMLInputElement>,
@@ -238,7 +180,14 @@ const ProfilePage = () => {
                 {(coverImg || profileImg) && (
                   <button
                     className='btn btn-primary rounded-full btn-sm text-white px-4 ml-2'
-                    onClick={() => updateProfile()}
+                    onClick={async () => {
+                      await updateProfile({
+                        coverImg,
+                        profileImg,
+                      });
+                      setCoverImg(null);
+                      setProfileImg(null);
+                    }}
                   >
                     {isUpdatingProfile ? 'Updating...' : 'Update'}
                   </button>
