@@ -275,7 +275,6 @@ const Post = ({ post }: { post: IPopulatedPost }) => {
                       </p>
                     )}
                     {post.comments.map((comment) => {
-                      console.log('Post,comment', comment);
                       return (
                         <div
                           key={comment._id!.toString()}
