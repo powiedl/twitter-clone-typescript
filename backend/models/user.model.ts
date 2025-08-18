@@ -1,5 +1,5 @@
-import mongoose, { ObjectId, Types } from 'mongoose';
-import { ICreateUser } from '../types/auth.types';
+import mongoose, { type ObjectId, Types } from 'mongoose';
+import { type ICreateUser } from '../types/auth.types';
 
 export interface IUser extends ICreateUser {
   followers: ObjectId[];

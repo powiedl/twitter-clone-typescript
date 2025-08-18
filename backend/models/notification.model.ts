@@ -1,4 +1,4 @@
-import mongoose, { ObjectId, Types } from 'mongoose';
+import mongoose, { type ObjectId, Types } from 'mongoose';
 
 export interface INotification {
   from: ObjectId;

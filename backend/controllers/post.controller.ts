@@ -3,19 +3,19 @@ import { Types } from 'mongoose';
 
 import { controllerError } from '../lib/utils/controllerError';
 import Post, {
-  ICreateComment,
-  ICreatePost,
-  IPost,
-  IPostWithId,
+  type ICreateComment,
+  type ICreatePost,
+  type IPost,
+  type IPostWithId,
 } from '../models/post.model';
 import User from '../models/user.model';
 import {
-  ApplicationResponse,
-  IMessageAsResponse,
-  TypedAuthorizedRequestBody,
+  type ApplicationResponse,
+  type IMessageAsResponse,
+  type TypedAuthorizedRequestBody,
 } from '../types/express.types';
 import Notification, { NotificationType } from '../models/notification.model';
-import { IForeignUser } from '../types/user.types';
+import { type IForeignUser } from '../types/user.types';
 
 export interface IPopulatedPost {
   _id: Types.ObjectId;

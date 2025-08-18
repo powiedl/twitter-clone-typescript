@@ -529,3 +529,19 @@ The logic inside the **Post.tsx** is also remarkable different to the Javascript
 The onSuccess is a little complicated, because from the likeUnlike API we only get an array of the user ids, which like the post, but from the original posts api we get some "meta" data of the users, who like the post. So we need to transform the data from the likeUnlike API to match the data from the posts api (and because we only use the user id, I only populate the user id into an array of objects - each object with a single attribute - the \_id).
 
 With the setQueryData we can directly manipulate the cache of the query - without running the query again and without invalidating the whole query. In this scenario we only change one single post, so it would be a bad user experience to invalidate all posts and query them again from the backend.
+
+# Deployment
+
+I had to do some changes to build the app - which only showed up during the try to build it. So my first learning is - try to build your app from time to time during development so you can avoid these problems along the way. And for the time of writing this I'm not sure if I will make it to deploy the app (because in the first run I didn't).
+
+And - because the backend build "includes" the frontend build - first get the frontend build run successfully before starting to build the backend (and in the next section you will see we have to make changes to the backend folder to get the frontend build successful - after you did the necessary changes to the backend folder check to see if the backend still runs normally).
+
+## import type instead of import
+
+If you import a type (means using it solely as a type) you have to tell TypeScript this by adding type to the import. You will be guided by the error messages of `npm run build`.
+
+## Posts.tsx
+
+In Posts.tsx I had to convert the \_id of the post to a string to use it as the key prop for the Post component: `<Post key={post?._id?.toString()} post={post} />`. In the same file I got a warning about the EFeedType which is exported alongside with the components (which disables fast refresh) - and the solution is simple: put the enum in a separate file and import it (which I did with the Posts.enum.ts). And I had to adapt the imports in HomePage.tsx and ProfilePage.tsx.
+
+After these changes I was able to build the frontend - I only got some warnings from @tanstack, that the `use client` directive was ignored (I think this doesn't matter here, because we don't use a framework like NextJS to distinguish between server side and client side - our React App is solely client side).

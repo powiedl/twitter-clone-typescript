@@ -4,13 +4,7 @@ import { shouldBeUnreachable } from '../../utils/shouldBeUnreachable';
 import { queryPosts } from '../../queries/posts.query';
 import { useQuery } from '@tanstack/react-query';
 import { useEffect } from 'react';
-
-export enum EFeedType {
-  FOR_YOU = 'FOR_YOU',
-  FOLLOWING = 'FOLLOWING',
-  POSTS = 'POSTS',
-  LIKES = 'LIKES',
-}
+import { EFeedType } from './Posts.enum';
 
 const getPostEndpoint = (
   feedType: EFeedType,
@@ -79,7 +73,7 @@ const Posts = ({
   return (
     <>
       {posts.map((post) => (
-        <Post key={post?._id} post={post} />
+        <Post key={post?._id?.toString()} post={post} />
       ))}
     </>
   );

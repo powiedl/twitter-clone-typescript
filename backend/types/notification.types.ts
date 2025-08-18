@@ -69,7 +69,6 @@ export const convertToINotificationAsResponse = (
   }
 
   let _id: string | undefined;
-  let read: boolean;
   // _id
   if (typeof n._id === 'string') _id = n._id;
   if (n._id instanceof Types.ObjectId || n._id instanceof Schema.Types.ObjectId)

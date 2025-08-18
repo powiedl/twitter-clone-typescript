@@ -1,5 +1,5 @@
-import { Response } from 'express';
-import { IUserAsResponse } from './auth.types';
+import { type Response } from 'express';
+import { type IUserAsResponse } from './auth.types';
 
 export interface TypedRequestBody<T> extends Express.Request {
   cookies?: { jwt?: string };

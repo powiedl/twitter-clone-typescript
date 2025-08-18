@@ -2,7 +2,7 @@ import { useState } from 'react';
 
 import Posts from '../../components/common/Posts';
 import CreatePost from './CreatePost';
-import { EFeedType } from '../../components/common/Posts';
+import { EFeedType } from '../../components/common/Posts.enum';
 
 const HomePage = () => {
   const [feedType, setFeedType] = useState<EFeedType>(EFeedType.FOR_YOU);

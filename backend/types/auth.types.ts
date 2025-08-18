@@ -1,4 +1,4 @@
-import { IUserWithId } from '../models/user.model';
+import { type IUserWithId } from '../models/user.model';
 export type ICreateUser = {
   username: string;
   fullName: string;

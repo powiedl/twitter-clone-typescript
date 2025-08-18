@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { Link, useParams } from 'react-router-dom';
 
-import Posts, { EFeedType } from '../../components/common/Posts';
+import Posts from '../../components/common/Posts';
+import { EFeedType } from '../../components/common/Posts.enum';
 import ProfileHeaderSkeleton from '../../components/skeletons/ProfileHeaderSkeleton';
 import EditProfileModal from './EditProfileModal';
 
